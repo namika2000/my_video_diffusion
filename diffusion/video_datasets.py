@@ -68,7 +68,7 @@ class Dataset(data.Dataset):
         folder,
         image_size,
         channels = 3,
-        num_frames = 16,
+        num_frames = 10,
         horizontal_flip = False,
         force_num_frames = True,
         exts = ['gif']
@@ -95,4 +95,3 @@ class Dataset(data.Dataset):
         path = self.paths[index]
         tensor = gif_to_tensor(path, self.channels, transform = self.transform)
         return self.cast_num_frames_fn(tensor)
-     

@@ -8,7 +8,7 @@ from tqdm import tqdm
 from einops import rearrange
 from einops_exts import check_shape
 
-from utils import exists, default
+from .utils import exists, default
 
 # gaussian diffusion trainer class
 
@@ -166,26 +166,33 @@ class GaussianDiffusion(nn.Module):
         return model_mean + nonzero_mask * (0.5 * model_log_variance).exp() * noise
 
     @torch.inference_mode()
-    def p_sample_loop(self, shape, cond = None, cond_scale = 1.):
+    def p_sample_loop(self, shape, cond = None, cond_scale = 1., cond_kwargs=None):
         device = self.betas.device
 
         b = shape[0]
         img = torch.randn(shape, device=device)
 
+        # 補間用に追加
+        cond_frames = cond_kwargs["cond_frames"]
+        if cond_frames:
+            cond_img = cond_kwargs["cond_img"]
+
         for i in tqdm(reversed(range(0, self.num_timesteps)), desc='sampling loop time step', total=self.num_timesteps):
-            img = self.p_sample(img, torch.full((b,), i, device=device, dtype=torch.long), cond = None, cond_scale = cond_scale)
+            if cond_frames:
+                img[:,:,cond_frames] = cond_img
+            img = self.p_sample(img, torch.full((b,), i, device=device, dtype=torch.long), cond = cond, cond_scale = cond_scale)
 
         return unnormalize_img(img)
 
     @torch.inference_mode()
-    def sample(self, cond = None, cond_scale = 1., batch_size = 16):
+    def sample(self, cond = None, cond_scale = 1., batch_size = 16, cond_kwargs=None):
         device = next(self.denoise_fn.parameters()).device
-
         batch_size = cond.shape[0] if exists(cond) else batch_size
         image_size = self.image_size
         channels = self.channels
         num_frames = self.num_frames
-        return self.p_sample_loop((batch_size, channels, num_frames, image_size, image_size), cond = None, cond_scale = cond_scale)
+        return self.p_sample_loop((batch_size, channels, num_frames, image_size, image_size), cond = cond, cond_scale = cond_scale, cond_kwargs=cond_kwargs)
+
 
     @torch.inference_mode()
     def interpolate(self, x1, x2, t = None, lam = 0.5):
@@ -215,7 +222,13 @@ class GaussianDiffusion(nn.Module):
         max_num_mask_frames=4, 
         mask_range=None, 
         null_cond_prob=0,
-        exclude_conditional=True):
+        exclude_conditional=True,
+        seq_len = 16):
+      
+        if mask_range is None:
+          mask_range = [0, seq_len]
+        else:
+          mask_range = [int(i) for i in mask_range if i != ","]
   # max_num_mask_frames=4, mask_range=None, exclude_conditionalのargs必要
         b, c, f, h, w, device = *x_start.shape, x_start.device
         noise = default(noise, lambda: torch.randn_like(x_start))

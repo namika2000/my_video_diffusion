@@ -1,0 +1,5 @@
+{
+  "model_name_or_path": "cl-tohoku/bert-base-japanese",
+  "learning_rate": 2e-5,
+  "experiment": 1
+}

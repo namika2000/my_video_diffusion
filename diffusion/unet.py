@@ -18,7 +18,7 @@ from einops_exts import check_shape, rearrange_many
 
 from rotary_embedding_torch import RotaryEmbedding
 
-from utils import exists, is_odd, default, prob_mask_like
+from .utils import exists, is_odd, default, prob_mask_like
 
 # relative positional bias
 

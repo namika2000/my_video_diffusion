@@ -5,7 +5,6 @@ Train a diffusion model on images.
 import argparse
 import os, sys
 sys.path.insert(1, os.getcwd()) 
-# import numpy as np
 import torch
 from torch.utils import data
 from diffusion import logger
